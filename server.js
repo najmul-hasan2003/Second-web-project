@@ -82,6 +82,49 @@ app.post('/login', async (req, res) => {
 });
 
 
+
+
+
+
+
+// এই পেজটি শুধু টোকেন থাকলে খুলবে
+app.get('/dashboard', verifyToken, (req, res) => {
+    res.send(`
+        <h1>Welcome to your Private Dashboard!</h1>
+        <p>আপনার ইউজার আইডি: ${req.user.id}</p>
+        <p>এই তথ্যটি সুরক্ষিত।</p>
+        <a href="/">হোমে ফিরে যান</a>
+    `);
+});
+
+
+
+
+
+
+// টোকেন যাচাই করার ফাংশন
+const verifyToken = (req, res, next) => {
+    // সাধারণত টোকেন 'Header' এ পাঠানো হয়, আমরা এখানে সহজ করার জন্য কুয়েরি বা হেডার চেক করছি
+    const token = req.headers['authorization'] || req.query.token;
+
+    if (!token) {
+        return res.status(403).send("লগইন করা ছাড়া এই পেজ দেখা সম্ভব নয়! (Token Missing)");
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // টোকেন সঠিক হলে ইউজারের আইডি রিকোয়েস্টে সেভ হবে
+        next(); // পরের ধাপে যাওয়ার অনুমতি
+    } catch (err) {
+        return res.status(401).send("ভুল বা মেয়াদোত্তীর্ণ টোকেন!");
+    }
+};
+
+
+
+
+
+
 // ৪. ইউজার লিস্ট দেখার রুট
 app.get('/users', async (req, res) => {
     const users = await User.find();
