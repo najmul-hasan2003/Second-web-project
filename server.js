@@ -1,46 +1,79 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs'); // পাসওয়ার্ড এনক্রিপশনের জন্য
 const app = express();
 
-// মিডলওয়্যার (ভুল করবেন না এখানে)
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ডাটাবেস কানেকশন
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log("DB Connection Error:", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.log("❌ DB Connection Error:", err));
 
-// মডেল
+// ইউজার মডেল
 const User = mongoose.model('User', new mongoose.Schema({
-    name: String,
-    email: String
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true }
 }));
 
-// রুটসমূহ
+// ১. হোম পেজ (রেজিস্ট্রেশন ও লগইন ফর্ম)
 app.get('/', (req, res) => {
     res.send(`
-        <h2>Add User to MongoDB</h2>
+        <h2>Registration</h2>
         <form action="/add-user" method="POST">
             <input type="text" name="name" placeholder="Name" required><br><br>
             <input type="email" name="email" placeholder="Email" required><br><br>
-            <button type="submit">Submit</button>
+            <input type="password" name="password" placeholder="Password" required><br><br>
+            <button type="submit">Register</button>
         </form>
-        <br><a href="/users">View All Users</a>
+        <hr>
+        <h2>Login</h2>
+        <form action="/login" method="POST">
+            <input type="email" name="email" placeholder="Email" required><br><br>
+            <input type="password" name="password" placeholder="Password" required><br><br>
+            <button type="submit">Login</button>
+        </form>
+        <br><a href="/users">View JSON Data</a>
     `);
 });
 
+// ২. রেজিস্ট্রেশন রুট (পাসওয়ার্ড হ্যাশ করা হবে)
 app.post('/add-user', async (req, res) => {
     try {
-        const newUser = new User({ name: req.body.name, email: req.body.email });
+        const { name, email, password } = req.body;
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = new User({ name, email, password: hashedPassword });
         await newUser.save();
-        res.send('<h3>User Saved Successfully!</h3><a href="/">Go Back</a>');
+        res.send('<h3>Registration Successful!</h3><a href="/">Go Back</a>');
     } catch (err) {
         res.status(500).send("Error: " + err.message);
     }
 });
 
+// ৩. লগইন রুট (পাসওয়ার্ড চেক করা হবে)
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).send("User not found!");
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (isMatch) {
+            res.send(`<h3>Welcome, ${user.name}!</h3><a href="/">Logout</a>`);
+        } else {
+            res.status(400).send("Invalid Password!");
+        }
+    } catch (err) {
+        res.status(500).send("Error: " + err.message);
+    }
+});
+
+// ৪. ইউজার লিস্ট দেখার রুট
 app.get('/users', async (req, res) => {
     const users = await User.find();
     res.json(users);
