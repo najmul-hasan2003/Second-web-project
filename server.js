@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs'); // পাসওয়ার্ড এনক্রিপশনের জন্য
 const app = express();
 const jwt = require('jsonwebtoken');
+const path = require('path');
+
 
 
 app.use(express.json());
@@ -42,7 +44,8 @@ app.get('/', (req, res) => {
     `);
 });
 
-// ২. রেজিস্ট্রেশন রুট (পাসওয়ার্ড হ্যাশ করা হবে)
+
+
 app.post('/add-user', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -51,11 +54,14 @@ app.post('/add-user', async (req, res) => {
 
         const newUser = new User({ name, email, password: hashedPassword });
         await newUser.save();
-        res.send('<h3>Registration Successful!</h3><a href="/">Go Back</a>');
+        res.status(201).json({ success: true, message: "Registration Successful!" });
     } catch (err) {
-        res.status(500).send("Error: " + err.message);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+
 
 // লগইন রুট আপডেট (JWT সহ)
 app.post('/login', async (req, res) => {
@@ -152,3 +158,6 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+
