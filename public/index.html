@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard | Orange Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Orange Panel</h2>
+        <p>Balance: <span id="bal">$0.00</span></p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="content">
+        <h1>Welcome, <span id="name">User</span></h1>
+        
+        <div class="otp-section">
+            <h3>Incoming OTP/SMS</h3>
+            <table border="1" width="100%">
+                <thead>
+                    <tr><th>Time</th><th>From</th><th>Message</th></tr>
+                </thead>
+                <tbody id="msg-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadProfile() {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/auth/profile', {
+                headers: {'Authorization': 'Bearer ' + token}
+            });
+            const data = await res.json();
+            document.getElementById('name').innerText = data.user.username;
+            document.getElementById('bal').innerText = '$' + data.user.balance;
+        }
+        loadProfile();
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+    </script>
+</body>
+</html>

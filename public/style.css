@@ -1,0 +1,133 @@
+/* ১. সাধারণ স্টাইল ও ফন্ট */
+:root {
+    --primary-orange: #FF8C00;
+    --dark-bg: #1A1A2E;
+    --light-bg: #F4F7F6;
+    --text-color: #333;
+    --white: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+
+/* ২. লগইন ও রেজিস্ট্রেশন পেজ স্টাইল */
+.auth-box {
+    background: var(--white);
+    width: 100%;
+    max-width: 400px;
+    margin: 100px auto;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.auth-box h2 {
+    color: var(--primary-orange);
+    margin-bottom: 20px;
+}
+
+.auth-box input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+}
+
+.auth-box button {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-orange);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.auth-box button:hover {
+    background: #e67e00;
+}
+
+/* ৩. ড্যাশবোর্ড লেআউট (Sidebar & Content) */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background: var(--dark-bg);
+    color: var(--white);
+    position: fixed;
+    padding: 20px;
+}
+
+.sidebar h2 {
+    color: var(--primary-orange);
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.sidebar p {
+    background: rgba(255, 140, 0, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.content {
+    margin-left: 250px;
+    padding: 40px;
+}
+
+/* ৪. ওটিপি টেবিল স্টাইল */
+.otp-section {
+    background: var(--white);
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--primary-orange);
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+/* ওটিপি কোড হাইলাইট */
+.otp-code {
+    font-weight: bold;
+    color: var(--primary-orange);
+    background: #fff3e0;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+/* ৫. রেসপন্সিভ ডিজাইন */
+@media (max-width: 768px) {
+    .sidebar { width: 100%; height: auto; position: relative; }
+    .content { margin-left: 0; }
+}
