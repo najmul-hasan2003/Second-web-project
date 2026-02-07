@@ -3,6 +3,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs'); // পাসওয়ার্ড এনক্রিপশনের জন্য
 const app = express();
+const jwt = require('jsonwebtoken');
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -55,7 +57,7 @@ app.post('/add-user', async (req, res) => {
     }
 });
 
-// ৩. লগইন রুট (পাসওয়ার্ড চেক করা হবে)
+// লগইন রুট আপডেট (JWT সহ)
 app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -63,15 +65,22 @@ app.post('/login', async (req, res) => {
         if (!user) return res.status(404).send("User not found!");
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (isMatch) {
-            res.send(`<h3>Welcome, ${user.name}!</h3><a href="/">Logout</a>`);
-        } else {
-            res.status(400).send("Invalid Password!");
-        }
+        if (!isMatch) return res.status(400).send("Invalid Password!");
+
+        // ১. টোকেন তৈরি করা (এটি ১ ঘণ্টা স্থায়ী থাকবে)
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        // ২. ব্রাউজারে টোকেনটি পাঠানো (ভবিষ্যতে ফ্রন্টএন্ড এটি ব্যবহার করবে)
+        res.send(`
+            <h3>Welcome, ${user.name}! Login Successful.</h3>
+            <p>Your Token: <b>${token.substring(0, 20)}...</b></p>
+            <a href="/">Go Back</a>
+        `);
     } catch (err) {
         res.status(500).send("Error: " + err.message);
     }
 });
+
 
 // ৪. ইউজার লিস্ট দেখার রুট
 app.get('/users', async (req, res) => {
