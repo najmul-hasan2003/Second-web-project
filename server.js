@@ -87,15 +87,32 @@ app.post('/login', async (req, res) => {
 
 
 
-// এই পেজটি শুধু টোকেন থাকলে খুলবে
-app.get('/dashboard', verifyToken, (req, res) => {
-    res.send(`
-        <h1>Welcome to your Private Dashboard!</h1>
-        <p>আপনার ইউজার আইডি: ${req.user.id}</p>
-        <p>এই তথ্যটি সুরক্ষিত।</p>
-        <a href="/">হোমে ফিরে যান</a>
-    `);
+const path = require('path');
+
+// এই লাইনটি যোগ করুন যাতে সার্ভার HTML ফাইলটি পাঠাতে পারে
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// লগইন রুটটি JSON রেসপন্স পাঠানোর জন্য আপডেট করুন
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: "User not found!" });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Invalid Password!" });
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        
+        // এবার আমরা শুধু টেক্সট না পাঠিয়ে অবজেক্ট পাঠাচ্ছি
+        res.json({ token, user: { name: user.name, email: user.email } });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 
 
 

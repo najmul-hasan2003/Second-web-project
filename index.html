@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Auth Interface</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        .box { border: 1px solid #ccc; padding: 20px; margin: 10px auto; max-width: 300px; border-radius: 8px; }
+        input { width: 90%; padding: 8px; margin: 5px 0; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; }
+        #dashboard { display: none; background: #f4f4f4; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-section">
+        <div class="box">
+            <h3>Register</h3>
+            <input type="text" id="regName" placeholder="Name">
+            <input type="email" id="regEmail" placeholder="Email">
+            <input type="password" id="regPass" placeholder="Password">
+            <button onclick="register()">Register</button>
+        </div>
+
+        <div class="box">
+            <h3>Login</h3>
+            <input type="email" id="logEmail" placeholder="Email">
+            <input type="password" id="logPass" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="box">
+        <h3>Welcome to Dashboard</h3>
+        <p id="userInfo"></p>
+        <button onclick="logout()" style="background:#dc3545">Logout</button>
+    </div>
+
+    <script>
+        const API_URL = ""; // রেন্ডারের লিংক ফাঁকা রাখলে এটি একই সার্ভার থেকে ডাটা নেবে
+
+        async function register() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPass').value;
+
+            const res = await fetch('/add-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+            alert(res.ok ? "Registration Successful!" : "Failed!");
+        }
+
+        async function login() {
+            const email = document.getElementById('logEmail').value;
+            const password = document.getElementById('logPass').value;
+
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', data.token); // টোকেন ব্রাউজারে সেভ করা
+                showDashboard(data.user.name);
+            } else {
+                alert(data.message || "Login Failed!");
+            }
+        }
+
+        function showDashboard(name) {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('userInfo').innerText = "Hello, " + name;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
