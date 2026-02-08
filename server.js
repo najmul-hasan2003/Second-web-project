@@ -1,10 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // পাসওয়ার্ড এনক্রিপশনের জন্য
-const app = express();
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const path = require('path');
+const path = require('path'); // এটি শুধু একবারই থাকবে
+
+const app = express();
+// ... বাকি কোড
 
 
 
@@ -95,10 +97,11 @@ app.post('/login', async (req, res) => {
 
 const path = require('path');
 
-// এই লাইনটি যোগ করুন যাতে সার্ভার HTML ফাইলটি পাঠাতে পারে
+// পুরাতন res.send টা মুছে ফেলুন এবং এটি দিন:
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 
 // লগইন রুটটি JSON রেসপন্স পাঠানোর জন্য আপডেট করুন
 app.post('/login', async (req, res) => {
@@ -154,10 +157,11 @@ app.get('/users', async (req, res) => {
     res.json(users);
 });
 
+
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
 
 
