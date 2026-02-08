@@ -3,51 +3,56 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const path = require('path'); // এটি শুধু একবারই থাকবে
+const path = require('path');
 
 const app = express();
-// ... বাকি কোড
 
-
-
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ডাটাবেস কানেকশন
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ DB Connection Error:", err));
+// Database Connection
+const mongoURI = process.env.MONGO_URI;
+if (!mongoURI) {
+    console.error("❌ MONGO_URI is missing in Render Environment Variables!");
+} else {
+    mongoose.connect(mongoURI)
+        .then(() => console.log("✅ MongoDB Connected Successfully"))
+        .catch(err => console.log("❌ DB Connection Error:", err));
+}
 
-// ইউজার মডেল
+// User Model
 const User = mongoose.model('User', new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }
 }));
 
-// ১. হোম পেজ (রেজিস্ট্রেশন ও লগইন ফর্ম)
+// Authorization Middleware
+const verifyToken = (req, res, next) => {
+    let token = req.query.token || req.headers['authorization'];
+    if (!token) return res.status(403).json({ message: "Access Denied! Token Missing." });
+
+    if (token.startsWith('Bearer ')) {
+        token = token.slice(7, token.length);
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Invalid or Expired Token!" });
+    }
+};
+
+// Routes
+// ১. হোম পেজে ইন্টারফেস (index.html) লোড করা
 app.get('/', (req, res) => {
-    res.send(`
-        <h2>Registration</h2>
-        <form action="/add-user" method="POST">
-            <input type="text" name="name" placeholder="Name" required><br><br>
-            <input type="email" name="email" placeholder="Email" required><br><br>
-            <input type="password" name="password" placeholder="Password" required><br><br>
-            <button type="submit">Register</button>
-        </form>
-        <hr>
-        <h2>Login</h2>
-        <form action="/login" method="POST">
-            <input type="email" name="email" placeholder="Email" required><br><br>
-            <input type="password" name="password" placeholder="Password" required><br><br>
-            <button type="submit">Login</button>
-        </form>
-        <br><a href="/users">View JSON Data</a>
-    `);
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-
-
+// ২. রেজিস্ট্রেশন রুট
 app.post('/add-user', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -62,48 +67,7 @@ app.post('/add-user', async (req, res) => {
     }
 });
 
-
-
-
-// লগইন রুট আপডেট (JWT সহ)
-app.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).send("User not found!");
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).send("Invalid Password!");
-
-        // ১. টোকেন তৈরি করা (এটি ১ ঘণ্টা স্থায়ী থাকবে)
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        // ২. ব্রাউজারে টোকেনটি পাঠানো (ভবিষ্যতে ফ্রন্টএন্ড এটি ব্যবহার করবে)
-        res.send(`
-            <h3>Welcome, ${user.name}! Login Successful.</h3>
-            <p>Your Token: <b>${token.substring(0, 20)}...</b></p>
-            <a href="/">Go Back</a>
-        `);
-    } catch (err) {
-        res.status(500).send("Error: " + err.message);
-    }
-});
-
-
-
-
-
-
-
-const path = require('path');
-
-// পুরাতন res.send টা মুছে ফেলুন এবং এটি দিন:
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-
-// লগইন রুটটি JSON রেসপন্স পাঠানোর জন্য আপডেট করুন
+// ৩. লগইন রুট (JWT সহ)
 app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -114,54 +78,19 @@ app.post('/login', async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: "Invalid Password!" });
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        
-        // এবার আমরা শুধু টেক্সট না পাঠিয়ে অবজেক্ট পাঠাচ্ছি
         res.json({ token, user: { name: user.name, email: user.email } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
-
-
-
-
-
-
-// টোকেন যাচাই করার ফাংশন
-const verifyToken = (req, res, next) => {
-    // সাধারণত টোকেন 'Header' এ পাঠানো হয়, আমরা এখানে সহজ করার জন্য কুয়েরি বা হেডার চেক করছি
-    const token = req.headers['authorization'] || req.query.token;
-
-    if (!token) {
-        return res.status(403).send("লগইন করা ছাড়া এই পেজ দেখা সম্ভব নয়! (Token Missing)");
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // টোকেন সঠিক হলে ইউজারের আইডি রিকোয়েস্টে সেভ হবে
-        next(); // পরের ধাপে যাওয়ার অনুমতি
-    } catch (err) {
-        return res.status(401).send("ভুল বা মেয়াদোত্তীর্ণ টোকেন!");
-    }
-};
-
-
-
-
-
-
-// ৪. ইউজার লিস্ট দেখার রুট
-app.get('/users', async (req, res) => {
-    const users = await User.find();
-    res.json(users);
+// ৪. প্রাইভেট ড্যাশবোর্ড
+app.get('/dashboard', verifyToken, (req, res) => {
+    res.json({ message: "Welcome to your private dashboard!", userId: req.user.id });
 });
 
-
-
+// Port Binding (Render এর জন্য খুবই গুরুত্বপূর্ণ)
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
-
-
