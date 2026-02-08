@@ -84,6 +84,20 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     time: { type: Date, default: Date.now }
 }));
 
+async function loadDashboard() {
+    const token = localStorage.getItem('token');
+    // ইউজার প্রোফাইল বা ব্যালেন্স ডাটা নিয়ে আসা
+    const res = await fetch('/api/user-profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+        document.getElementById('balanceDisplay').innerText = `$${data.user.balance.toFixed(2)}`;
+    }
+}
+
+
 
 app.get('/api/messages', verifyToken, async (req, res) => {
     const messages = await Message.find({ userId: req.user.id }).sort({ time: -1 });

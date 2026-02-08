@@ -1,112 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auth System</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { text-align: center; color: #333; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:hover { background-color: #218838; }
-        .toggle-link { text-align: center; margin-top: 15px; cursor: pointer; color: #007bff; }
-        #dashboard { display: none; text-align: center; }
-    </style>
+    <title>Dashboard | Orange Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
 </head>
 <body>
-    <div class="container" id="authBox">
-        <div id="regForm">
-            <h2>Register</h2>
-            <input type="text" id="regName" placeholder="Full Name">
-            <input type="email" id="regEmail" placeholder="Email Address">
-            <input type="password" id="regPass" placeholder="Password">
-            <button onclick="register()">Create Account</button>
-            <p class="toggle-link" onclick="toggleForms()">Already have an account? Login</p>
-        </div>
-        <div id="logForm" style="display: none;">
-            <h2>Login</h2>
-            <input type="email" id="logEmail" placeholder="Email Address">
-            <input type="password" id="logPass" placeholder="Password">
-            <button onclick="login()">Login Now</button>
-            <p class="toggle-link" onclick="toggleForms()">Need an account? Register</p>
-        </div>
-        <div id="dashboard">
-            <h2>Welcome!</h2>
-            <p id="welcomeMsg"></p>
-            <button onclick="logout()" style="background-color: #dc3545;">Logout</button>
+    <div class="sidebar">
+        <h2>Orange Panel</h2>
+        <p>Balance: <span id="bal">$0.00</span></p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="content">
+        <h1>Welcome, <span id="name">User</span></h1>
+        
+        <div class="otp-section">
+            <h3>Incoming OTP/SMS</h3>
+            <table border="1" width="100%">
+                <thead>
+                    <tr><th>Time</th><th>From</th><th>Message</th></tr>
+                </thead>
+                <tbody id="msg-body"></tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        function toggleForms() {
-            const reg = document.getElementById('regForm');
-            const log = document.getElementById('logForm');
-            reg.style.display = reg.style.display === 'none' ? 'block' : 'none';
-            log.style.display = log.style.display === 'none' ? 'block' : 'none';
-        }
-
-        async function register() {
-            const name = document.getElementById('regName').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPass').value;
-            const response = await fetch('/add-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
+        async function loadProfile() {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/auth/profile', {
+                headers: {'Authorization': 'Bearer ' + token}
             });
-            const data = await response.json();
-            alert(data.message);
-            if (data.success) toggleForms();
+            const data = await res.json();
+            document.getElementById('name').innerText = data.user.username;
+            document.getElementById('bal').innerText = '$' + data.user.balance;
         }
-
-        async function login() {
-            const email = document.getElementById('logEmail').value;
-            const password = document.getElementById('logPass').value;
-            const response = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await response.json();
-            if (data.success) {
-                localStorage.setItem('token', data.token);
-                document.getElementById('regForm').style.display = 'none';
-                document.getElementById('logForm').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('welcomeMsg').innerText = `Hello, ${data.user.name}! You are logged in.`;
-            } else {
-                alert(data.message);
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('token');
-            location.reload();
-        }
-
-
-
-
-
-        async function loadMessages() {
-    const token = localStorage.getItem('token');
-    const res = await fetch('/api/messages?token=' + token);
-    const messages = await res.json();
-    
-    let tableBody = document.querySelector("#smsTable tbody");
-    tableBody.innerHTML = messages.map(msg => `
-        <tr>
-            <td>${new Date(msg.time).toLocaleTimeString()}</td>
-            <td>${msg.from}</td>
-            <td>${msg.content}</td>
-        </tr>
-    `).join('');
-}
-setInterval(loadMessages, 5000); // অটোমেটিক আপডেট হবে
-
-
+        loadProfile();
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
     </script>
 </body>
 </html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login | Orange Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-box">
+        <h2>Orange Panel Login</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="pass" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p>নতুন? <a href="#" onclick="alert('Signup API call here')">Create Account</a></p>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('pass').value;
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if(data.success) {
+                localStorage.setItem('token', data.token);
+                window.location.href = 'index.html';
+            } else { alert("Login Failed!"); }
+        }
+    </script>
+</body>
+</html>
