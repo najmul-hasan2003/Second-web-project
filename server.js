@@ -16,9 +16,13 @@ const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
     console.error("❌ MONGO_URI is missing in Render Environment Variables!");
 } else {
-    mongoose.connect(mongoURI)
-        .then(() => console.log("✅ MongoDB Connected Successfully"))
-        .catch(err => console.log("❌ DB Connection Error:", err));
+   mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("✅ MongoDB Connected"))
+    .catch(err => {
+        console.error("❌ MongoDB Connection Error:", err.message);
+        // এখানে প্রসেস এক্সিট না করে এররটি প্রিন্ট করবে
+    });
+
 }
 
 // User Model
