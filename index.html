@@ -2,85 +2,111 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Auth Interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth System</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        .box { border: 1px solid #ccc; padding: 20px; margin: 10px auto; max-width: 300px; border-radius: 8px; }
-        input { width: 90%; padding: 8px; margin: 5px 0; }
-        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; }
-        #dashboard { display: none; background: #f4f4f4; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #333; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background-color: #218838; }
+        .toggle-link { text-align: center; margin-top: 15px; cursor: pointer; color: #007bff; }
+        #dashboard { display: none; text-align: center; }
     </style>
 </head>
 <body>
-
-    <div id="auth-section">
-        <div class="box">
-            <h3>Register</h3>
-            <input type="text" id="regName" placeholder="Name">
-            <input type="email" id="regEmail" placeholder="Email">
+    <div class="container" id="authBox">
+        <div id="regForm">
+            <h2>Register</h2>
+            <input type="text" id="regName" placeholder="Full Name">
+            <input type="email" id="regEmail" placeholder="Email Address">
             <input type="password" id="regPass" placeholder="Password">
-            <button onclick="register()">Register</button>
+            <button onclick="register()">Create Account</button>
+            <p class="toggle-link" onclick="toggleForms()">Already have an account? Login</p>
         </div>
-
-        <div class="box">
-            <h3>Login</h3>
-            <input type="email" id="logEmail" placeholder="Email">
+        <div id="logForm" style="display: none;">
+            <h2>Login</h2>
+            <input type="email" id="logEmail" placeholder="Email Address">
             <input type="password" id="logPass" placeholder="Password">
-            <button onclick="login()">Login</button>
+            <button onclick="login()">Login Now</button>
+            <p class="toggle-link" onclick="toggleForms()">Need an account? Register</p>
         </div>
-    </div>
-
-    <div id="dashboard" class="box">
-        <h3>Welcome to Dashboard</h3>
-        <p id="userInfo"></p>
-        <button onclick="logout()" style="background:#dc3545">Logout</button>
+        <div id="dashboard">
+            <h2>Welcome!</h2>
+            <p id="welcomeMsg"></p>
+            <button onclick="logout()" style="background-color: #dc3545;">Logout</button>
+        </div>
     </div>
 
     <script>
-        const API_URL = ""; // রেন্ডারের লিংক ফাঁকা রাখলে এটি একই সার্ভার থেকে ডাটা নেবে
+        function toggleForms() {
+            const reg = document.getElementById('regForm');
+            const log = document.getElementById('logForm');
+            reg.style.display = reg.style.display === 'none' ? 'block' : 'none';
+            log.style.display = log.style.display === 'none' ? 'block' : 'none';
+        }
 
         async function register() {
             const name = document.getElementById('regName').value;
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPass').value;
-
-            const res = await fetch('/add-user', {
+            const response = await fetch('/add-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password })
             });
-            alert(res.ok ? "Registration Successful!" : "Failed!");
+            const data = await response.json();
+            alert(data.message);
+            if (data.success) toggleForms();
         }
 
         async function login() {
             const email = document.getElementById('logEmail').value;
             const password = document.getElementById('logPass').value;
-
-            const res = await fetch('/login', {
+            const response = await fetch('/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-
-            const data = await res.json();
-            if (res.ok) {
-                localStorage.setItem('token', data.token); // টোকেন ব্রাউজারে সেভ করা
-                showDashboard(data.user.name);
+            const data = await response.json();
+            if (data.success) {
+                localStorage.setItem('token', data.token);
+                document.getElementById('regForm').style.display = 'none';
+                document.getElementById('logForm').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('welcomeMsg').innerText = `Hello, ${data.user.name}! You are logged in.`;
             } else {
-                alert(data.message || "Login Failed!");
+                alert(data.message);
             }
-        }
-
-        function showDashboard(name) {
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('userInfo').innerText = "Hello, " + name;
         }
 
         function logout() {
             localStorage.removeItem('token');
             location.reload();
         }
+
+
+
+
+
+        async function loadMessages() {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/messages?token=' + token);
+    const messages = await res.json();
+    
+    let tableBody = document.querySelector("#smsTable tbody");
+    tableBody.innerHTML = messages.map(msg => `
+        <tr>
+            <td>${new Date(msg.time).toLocaleTimeString()}</td>
+            <td>${msg.from}</td>
+            <td>${msg.content}</td>
+        </tr>
+    `).join('');
+}
+setInterval(loadMessages, 5000); // অটোমেটিক আপডেট হবে
+
+
     </script>
 </body>
 </html>

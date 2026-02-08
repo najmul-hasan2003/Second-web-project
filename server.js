@@ -16,13 +16,9 @@ const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
     console.error("❌ MONGO_URI is missing in Render Environment Variables!");
 } else {
-   mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("✅ MongoDB Connected"))
-    .catch(err => {
-        console.error("❌ MongoDB Connection Error:", err.message);
-        // এখানে প্রসেস এক্সিট না করে এররটি প্রিন্ট করবে
-    });
-
+    mongoose.connect(mongoURI)
+        .then(() => console.log("✅ MongoDB Connected Successfully"))
+        .catch(err => console.log("❌ DB Connection Error:", err.message));
 }
 
 // User Model
@@ -32,31 +28,13 @@ const User = mongoose.model('User', new mongoose.Schema({
     password: { type: String, required: true }
 }));
 
-// Authorization Middleware
-const verifyToken = (req, res, next) => {
-    let token = req.query.token || req.headers['authorization'];
-    if (!token) return res.status(403).json({ message: "Access Denied! Token Missing." });
-
-    if (token.startsWith('Bearer ')) {
-        token = token.slice(7, token.length);
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (err) {
-        return res.status(401).json({ message: "Invalid or Expired Token!" });
-    }
-};
-
 // Routes
 // ১. হোম পেজে ইন্টারফেস (index.html) লোড করা
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ২. রেজিস্ট্রেশন রুট
+// ২. রেজিস্ট্রেশন রুট (JSON Response)
 app.post('/add-user', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -71,7 +49,7 @@ app.post('/add-user', async (req, res) => {
     }
 });
 
-// ৩. লগইন রুট (JWT সহ)
+// ৩. লগইন রুট (JWT Token সহ)
 app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -82,18 +60,39 @@ app.post('/login', async (req, res) => {
         if (!isMatch) return res.status(400).json({ message: "Invalid Password!" });
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token, user: { name: user.name, email: user.email } });
+        res.json({ success: true, token, user: { name: user.name, email: user.email } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 });
 
-// ৪. প্রাইভেট ড্যাশবোর্ড
-app.get('/dashboard', verifyToken, (req, res) => {
-    res.json({ message: "Welcome to your private dashboard!", userId: req.user.id });
+// ৪. ইউজার লিস্ট দেখার রুট (JSON)
+app.get('/users', async (req, res) => {
+    try {
+        const users = await User.find().select('-password'); // পাসওয়ার্ড ছাড়া ডাটা দেখাবে
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-// Port Binding (Render এর জন্য খুবই গুরুত্বপূর্ণ)
+
+const Message = mongoose.model('Message', new mongoose.Schema({
+    userId: mongoose.Schema.Types.ObjectId,
+    from: String,
+    content: String,
+    time: { type: Date, default: Date.now }
+}));
+
+
+app.get('/api/messages', verifyToken, async (req, res) => {
+    const messages = await Message.find({ userId: req.user.id }).sort({ time: -1 });
+    res.json(messages);
+});
+
+
+
+// Port Binding (Render এর জন্য)
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is running on port ${PORT}`);

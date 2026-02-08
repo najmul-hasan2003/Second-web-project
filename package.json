@@ -1,19 +1,16 @@
 {
-  "name": "auth-project",
+  "name": "auth-system",
   "version": "1.0.0",
-  "description": "Auth system with Node.js and MongoDB",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "dotenv": "^17.2.4",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.0",
-    "twilio": "^5.12.1"
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^8.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
